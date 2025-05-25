@@ -1,79 +1,44 @@
 {% extends "base.html" %}
+
 {% block navbar_content %}
-{% if current_user.is_authenticated %}
-<div class="navbar-nav">
-  <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
-</div>
-{% endif %}
-{% if not current_user.is_authenticated %}
-    <script>
-        window.location.href = "{{ url_for('auth.login') }}";
-    </script>
-{% endif %}
+  {% if current_user.is_authenticated %}
+    <div class="navbar-nav">
+      <a class="nav-item nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
 
 
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block title %}Home{% endblock %}
 
-{% block head %}
-<script>
-    // Execute when the page loads
-    window.onload = function() {
-        // Clear browser history
-        window.history.pushState(null, '', window.location.href);
-        window.history.pushState(null, '', window.location.href);
-        window.history.pushState(null, '', window.location.href);
+{% block content %}
+  <h1 class="text-center">{{ current_user.first_name }}さん、こんにちは</h1>
 
-        // Prevent back button
-        window.onpopstate = function(event) {
-            window.history.go(1);
-            window.history.pushState(null, '', window.location.href);
-        };
+  <ul class="list-group my-4">
+    {% for note in current_user.notes %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ note.data }}
+        <button class="btn btn-sm btn-danger" onclick="deleteNote({{ note.id }})">&times;</button>
+      </li>
+    {% endfor %}
+  </ul>
 
-        // Prevent backspace navigation
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Backspace' && !e.target.matches('input, textarea')) {
-                e.preventDefault();
-            }
-        });
-    };
-
-    // Disable right-click context menu
-    document.addEventListener('contextmenu', function(e) {
-        if (!e.target.matches('input, textarea')) {
-            e.preventDefault();
-        }
-    });
-
-    // Additional measure to ensure no back navigation
-    (function preventBack() {
-        window.history.forward();
-    })();
-
-    // Disable cache to prevent back navigation through cache
-    window.onunload = function() {};
-</script>
+  <form method="POST">
+    <textarea name="note" class="form-control mb-2" placeholder="New note…"></textarea>
+    <button type="submit" class="btn btn-primary">Add Note</button>
+  </form>
 {% endblock %}
 
-{% block content %}
-<h1 align="center">{{ user.first_name }}さん、こんにちは
-</h1>
-<ul class="list-group list-group-flush" id="notes">
-  {% for note in user.notes %}
-  <li class="list-group-item">
-    {{ note.data }}
-    <button type="button" class="close" onClick="deleteNote({{ note.id }})">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </li>
-  {% endfor %}
-</ul>
-<form method="POST">
-  <textarea name="note" id="note" class="form-control"></textarea>
-  <br />
-  <div align="center">
-    <button type="submit" class="btn btn-primary">Add Note</button>
-  </div>
-</form>
+{% block javascript %}
+  {{ super() }}
+  <script>
+    function deleteNote(id) {
+      fetch("/delete-note", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteId: id })
+      }).then(() => location.reload());
+    }
+  </script>
 {% endblock %}
